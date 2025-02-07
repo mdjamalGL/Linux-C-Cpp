@@ -1,0 +1,10 @@
+*
+!*.*
+!*/
+.out
+.exe
+.vscode
+*.mkv
+*.mp4
+*.ppm
+*.pgm
