@@ -2,8 +2,18 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
+/**
+ * This code extracts the frames, and from frame its data in yub,
+ * the yuv is then converted to RGB.
+ * Since the conversion is single threaded, its slower even for a single
+ * frame, and thus is not suitable for conversion during playback
+ * os simple frame to picture extraction
+ * 
+ * Using libswscale, we can do this faster and efficiently
+ */
 
 void yuvToRgb(int *rgb, int y, int  u, int v)
 {
@@ -58,10 +68,10 @@ int main(int argc, char *argv[])
     packet = av_packet_alloc();
     frame = av_frame_alloc();
 
-    int runUntil = 50;
+    int runUntil = 1;
 
     //read the packets
-    while(av_read_frame(fmtContext, packet) >= 0 && runUntil--)
+    while(av_read_frame(fmtContext, packet) >= 0)
     {
         if(packet->stream_index == videoStreamIndex)
         {
@@ -79,6 +89,7 @@ int main(int argc, char *argv[])
                 frame->height,
                 frame->linesize[0]
             );
+            runUntil--;
             if (frame->format == AV_PIX_FMT_YUV420P) {
                 printf("Pixel format: YUV420P\n");
             } else if (frame->format == AV_PIX_FMT_YUYV422) {
@@ -102,7 +113,12 @@ int main(int argc, char *argv[])
             printf("line0 : %d, line1 : %d, line2 : %d\n", frame->linesize[0], frame->linesize[1], frame->linesize[2]);
 
             FILE *fpt = NULL;
-            fpt = fopen("img.ppm", "w");
+            char filename[10] = "img";
+            char index[3]; sprintf(index, "%d", runUntil);
+            char dot[] = ".ppm";
+            strcat(filename, index);
+            strcat(filename, dot);
+            fpt = fopen(filename, "w");
 
             fprintf(fpt, "P3\n%d %d\n%d\n", frame->width, frame->height, 255);  
             printf("W, H : %d, %d\n", frame->width, frame->height);   
@@ -123,10 +139,17 @@ int main(int argc, char *argv[])
                 fprintf(fpt, "\n");
             }
             fclose(fpt);
-            break;
+            printf("Frame %d Done\n", runUntil);
+            //breaking as I want only one frame for 
+            //checking if the output is being created or not
+            // break;
             }
             
-            printf("data : %d\n", frame->data[0]);
+            // printf("data : %d\n", frame->data[0]);
+            if(runUntil == 0)
+            {
+                break;
+            }
         }
     }
 
