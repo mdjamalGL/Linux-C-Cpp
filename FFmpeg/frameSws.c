@@ -1,6 +1,8 @@
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
+#include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -47,35 +49,22 @@ void getPixelFormat(int format)
 
 void writeImage(uint8_t **data, int *linesize,int width, int height, FILE *fpt)
 {
-    //We can also use P3 for ascii mode ppm image
-    //but it is not getting recognised in default image viewer
-    //using gimp only, I could see the P3 image
+    struct SwsContext *swCont = sws_getContext(
+        width, height, AV_PIX_FMT_YUV420P,
+        width, height, AV_PIX_FMT_RGB24,
+        SWS_BILINEAR, NULL, NULL, NULL
+    );
+
+    int rgb_size = av_image_get_buffer_size(AV_PIX_FMT_RGB24, width, height, 1);
+    uint8_t *rgb = (uint8_t *)malloc(rgb_size);
+    AVFrame *rgb_frame = av_frame_alloc();
+
+    av_image_fill_arrays(rgb_frame->data, rgb_frame->linesize, rgb, AV_PIX_FMT_RGB24, width, height, 1);
+
+    sws_scale(swCont, data, linesize, 0, height, rgb_frame->data, rgb_frame->linesize);
     
-    fprintf(fpt, "P6\n%d %d\n%d\n", width, height, 255);  
-    printf("W, H : %d, %d\n", width, height);   
-    for(int y = 0; y < height; y++)
-    {
-        for(int x = 0; x < width; x++)
-        {
-            int rgb[] = {-1, -1, -1};
-            yuvToRgb(
-            rgb,
-            (data[0] + y * linesize[0])[x],
-            (data[1] + y/2 * linesize[1])[x/2],
-            (data[2] + y/2 * linesize[2])[x/2]
-            );
-            uint8_t rgb_data[3] = 
-            {
-                (uint8_t) av_clip(rgb[0], 0, 255),
-                (uint8_t) av_clip(rgb[1], 0, 255),
-                (uint8_t) av_clip(rgb[2], 0, 255)
-            };
-            fwrite(rgb_data, 1, 3, fpt);
-            // fprintf(fpt, "%d %d %d", rgb[0], rgb[1], rgb[2]);
-            // fprintf(fpt, " ");
-        }
-        // fprintf(fpt, "\n");
-    }
+    fprintf(fpt, "P6\n%d %d\n%d\n", width, height, 255);
+    fwrite(rgb_frame->data[0], 1, rgb_size, fpt);
 }
 int main(int argc, char *argv[])
 {
@@ -173,10 +162,5 @@ int main(int argc, char *argv[])
             }
         }
     }
-
-
-
-
-
     return 0;
 }
