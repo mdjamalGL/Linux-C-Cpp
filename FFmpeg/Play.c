@@ -9,45 +9,6 @@
 #include <string.h>
 #include <math.h>
 
-void getPixelFormat(int format)
-{
-    if (format == AV_PIX_FMT_YUV420P)
-    {
-        printf("Pixel format: YUV420P\n");
-    }
-    else if (format == AV_PIX_FMT_YUYV422)
-    {
-        printf("Pixel format: YUYV422\n");
-    }
-    else if (format == AV_PIX_FMT_RGB24)
-    {
-        printf("Pixel format: RGB24\n");
-    }
-    else if (format == AV_PIX_FMT_BGR24)
-    {
-        printf("Pixel format: BGR24\n");
-    }
-    else if (format == AV_PIX_FMT_YUV422P)
-    {
-        printf("Pixel format: YUV422P\n");
-    }
-    else if (format == AV_PIX_FMT_YUV444P)
-    {
-        printf("Pixel format: YUV444P\n");
-    }
-    else if (format == AV_PIX_FMT_NV12)
-    {
-        printf("Pixel format: NV12\n");
-    }
-    else if (format == AV_PIX_FMT_NV21)
-    {
-        printf("Pixel format: NV21\n");
-    }
-    else
-    {
-        printf("Pixel format: Unknown (%d)\n", format);
-    }
-}
 int main(int argc, char *argv[])
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER))
@@ -59,12 +20,11 @@ int main(int argc, char *argv[])
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
     SDL_Texture *texture;
-    AVCodec *codec = NULL;
+    const AVCodec *codec = NULL;
     AVCodecParameters *param = NULL;
     AVCodecContext *cdcContext = NULL;
     AVPacket *packet = NULL;
     AVFrame *frame = NULL;
-    bool test = false;
     int videoStreamIndex = -1;
     int frameFinished = -1;
 
@@ -117,47 +77,45 @@ int main(int argc, char *argv[])
                                 cdcContext->width,
                                 cdcContext->height);
 
-    // number of frames to extract
-    int runUntil = 100;
-    bool done = false;
+    bool quit = false;
 
     // read the packets
 
-        while (av_read_frame(fmtContext, packet) >= 0)
+    while (av_read_frame(fmtContext, packet) >= 0 && !quit)
+    {
+        SDL_Event event;
+        while(SDL_PollEvent(&event) != 0)
         {
-            if (packet->stream_index == videoStreamIndex)
+            if(event.type == SDL_QUIT)
             {
-                // send the encoded packet to codec
-                avcodec_send_packet(cdcContext, packet);
-                frameFinished = avcodec_receive_frame(cdcContext, frame);
-
-                if (!frameFinished)
-                {
-                    runUntil--;
-                    getPixelFormat(frame->format);
-
-                    int ret = SDL_UpdateYUVTexture(texture, NULL, frame->data[0], frame->linesize[0],
-                                                   frame->data[1], frame->linesize[1],
-                                                   frame->data[2], frame->linesize[2]);
-                    if (ret == -1)
-                    {
-                        printf("SDL Texture could not be loaded : %s\n", SDL_GetError());
-                    }
-
-                    SDL_RenderClear(renderer);
-                    SDL_RenderCopy(renderer, texture, NULL, NULL);
-                    SDL_RenderPresent(renderer);
-
-                    printf("Frame %d Done\n", runUntil);
-                }
-
-                if (runUntil == 0 && !test)
-                {
-                    break;
-                }
+                quit = true;
             }
         }
+        if (packet->stream_index == videoStreamIndex)
+        {
+            // send the encoded packet to codec
+            avcodec_send_packet(cdcContext, packet);
+            frameFinished = avcodec_receive_frame(cdcContext, frame);
+
+            if (!frameFinished)
+            {
+                int ret = SDL_UpdateYUVTexture(texture, NULL, frame->data[0], frame->linesize[0],
+                                                frame->data[1], frame->linesize[1],
+                                                frame->data[2], frame->linesize[2]);
+                if (ret == -1)
+                {
+                    printf("SDL Texture could not be loaded : %s\n", SDL_GetError());
+                }
+
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture, NULL, NULL);
+                SDL_RenderPresent(renderer);
+            }
+        }
+    }
     SDL_DestroyWindow(window);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
     SDL_Quit();
     return 0;
 }

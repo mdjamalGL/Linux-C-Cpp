@@ -13,6 +13,9 @@
  * os simple frame to picture extraction
  * 
  * Using libswscale, we can do this faster and efficiently
+ * 
+ * Also, the file size of ppm images is very large because it is just the raw
+ * data, with no compression
  */
 
 void yuvToRgb(int *rgb, int y, int  u, int v)
