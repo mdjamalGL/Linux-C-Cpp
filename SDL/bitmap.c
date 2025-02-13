@@ -13,9 +13,15 @@
  *      Blitting means copying the pixel data from one memory section to other, 
  *      in CPU rendering, the Surface is used to copy the BMP loaded Surface to
  *      the window surface we use this function.
- * param : SDL_Rect has (x,y,w,h), only x and y is used to denoted from where the data
+ * 
+ *      param : SDL_Rect has (x,y,w,h), only x and y is used to denoted from where the data
  *      has to be copied to or from. Thus no resize can be used
  *      We can use w,h with the alternate function SDL_BlitScaled.
+ * 4. All these components like surface and blitting uses CPU rendering meaning
+ *      each pixel data is processed, adjusted and copied using CPU and is not very efficient.
+ *      GPU rendering is faster and instead of going through pixel data sequentially, it process them in
+ *      parallel.
+ * 5. Texture is the GPU rendering equivalent of Surface in CPU rendering.
  * 
  */
 int main()

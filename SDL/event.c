@@ -2,6 +2,15 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+/**
+ * Used Here :
+ * 1. SDL_SetWindowPosition
+ * 2. SDL_Event, SDL_PollEvent : with event SDL_KEYDOWN for keystrokes
+ * 3. SDL_BlitScaled : for scaling the output to a desired size, using
+ *      SDL_Rect's w and h component
+ * 4. when the code runs, we can traverse the three .bmp images by using 
+ *      UP and DOWN keys
+ */
 int main()
 {
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
