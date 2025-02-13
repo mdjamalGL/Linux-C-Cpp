@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
             printf("Y linesize : %d\nU linesize : %d\nV linesize : %d\n", frame->linesize[0], frame->linesize[1], frame->linesize[2]);
 
             FILE *fpt = NULL;
-            fpt = fopen("img.ppm", "w");
+            fpt = fopen("img.pgm", "w");
 
             fprintf(fpt, "P5\n%d %d\n%d\n", frame->width, frame->height, 255);          
             
