@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
             printf("  Codec: %s\n", avcodec_get_name(cParam->codec_id));
             printf("  Resolution: %dx%d\n\n", cParam->width, cParam->height);
             printf("  Time Base : %d/%d\n", stream->time_base.num, stream->time_base.den);
+            printf("  R Frame Rate : %d/%d\n", stream->r_frame_rate.num, stream->r_frame_rate.den);
+            printf("  Average frame Rate : %d/%d\n", stream->avg_frame_rate.num/stream->avg_frame_rate.den);
             videoStreamIndex = i;
         }
     }
@@ -61,23 +63,20 @@ int main(int argc, char *argv[])
             //send the encoded packet to codec
             avcodec_send_packet(cdcContext, packet);
             avcodec_receive_frame(cdcContext, frame);
+            AVRational avgFrameRate = fmtContext->streams[videoStreamIndex]->avg_frame_rate;
+            AVRational timebase = fmtContext->streams[videoStreamIndex]->time_base;
             char picture = av_get_picture_type_char(frame->pict_type);
             if(picture == 'I' || picture == 'B' || picture == 'P')
             {
                 fTB = frame->time_base;
                 pTB = packet->time_base;
-                printf("Frame %c : %d | pts : %d | dts : %d\np_tb : %d/%d f_tb : %d/%d Second : %d\n\n", picture,
-                cdcContext->frame_number,
-                frame->pts,
-                frame->pkt_dts,
-                pTB.num,
-                pTB.den,
-                fTB.num,
-                fTB.den,
-                av_rescale_q(frame->pts, fTB, AV_TIME_BASE_Q)
+                printf("Frame %c : %d Next PTS : %d ms | pts : %ld ms | dts : %d ms | seektimestamp : %d ms\n", picture,
+                cdcContext->frame_num,
+                av_rescale_q(1, (AVRational){avgFrameRate.den,avgFrameRate.num}, AV_TIME_BASE_Q),
+                av_rescale_q(frame->pts , timebase, AV_TIME_BASE_Q),
+                av_rescale_q(frame->pkt_dts, timebase, AV_TIME_BASE_Q),
+                av_rescale_q(cdcContext->frame_number,(AVRational){avgFrameRate.den,avgFrameRate.num}, AV_TIME_BASE_Q)
                 );
-            
-
             }
         }
     }

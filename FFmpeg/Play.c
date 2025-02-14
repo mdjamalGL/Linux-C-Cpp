@@ -13,6 +13,12 @@
 #include <string.h>
 #include <math.h>
 
+int demo(AVFormatContext *fmtContext , AVPacket *packet)
+{
+    printf("Read Frame Called\n");
+    return av_read_frame(fmtContext, packet);
+}
+
 int main(int argc, char *argv[])
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER))
@@ -35,9 +41,13 @@ int main(int argc, char *argv[])
     AVRational time_base = {};
     int64_t lastPts = AV_NOPTS_VALUE;
     int64_t delay = 0;
+    int64_t seekTimestamp;
+    int seekTarget;
+
 
     //util objects
     int videoStreamIndex = -1;
+    AVRational avgFrameRate = {};
     int frameFinished = -1;
     bool quit = false;
     bool playbackStop = false;
@@ -70,7 +80,9 @@ int main(int argc, char *argv[])
             printf("  Codec: %s\n", avcodec_get_name(cParam->codec_id));
             printf("  Resolution: %dx%d\n", cParam->width, cParam->height);
             videoStreamIndex = i;
+            avgFrameRate = stream->r_frame_rate;
             time_base = stream->time_base;
+
         }
     }
 
@@ -114,8 +126,14 @@ int main(int argc, char *argv[])
 
 
     // read the packets
-    while(av_read_frame(fmtContext, packet) == 0)
+    while(playbackStop || demo(fmtContext, packet) == 0)
     {
+        
+        
+        if(packet == NULL)
+        {
+            printf("Encoded Packet Read was unsuccessful\n");
+        }
         SDL_Event event;
         while(SDL_PollEvent(&event) != 0)
         {
@@ -129,16 +147,35 @@ int main(int argc, char *argv[])
                 {
                     //todo : stop and play
                     //somehow need to stop frame decoding in av_read_frame
-                    // playbackStop = playbackStop ? false : true;
-                    // while(playbackStop)
-                    // {
-                    //     usleep(60000);
+                    playbackStop = playbackStop ? false : true;
+                    if(playbackStop)
+                    {
+                        seekTarget = cdcContext->frame_number;
+                        // seekTimestamp= av_rescale_q(cdcContext->frame_num, (AVRational){avgFrameRate.den, avgFrameRate.num}, time_base);
+                        avformat_close_input(&fmtContext);
+                        fmtContext = NULL;
+                    }
+                    else
+                    {
+                        printf("Playback Resumed : \n");
+                        printf("Seeking to frame : %d\n", seekTarget);
+                        fmtContext = avformat_alloc_context();
+                        avformat_open_input(&fmtContext, argv[1], NULL, NULL);
 
-                    // }
+                        printf("Seek to the timeStamp : %ld\n", seekTimestamp);
+                        av_seek_frame(fmtContext, videoStreamIndex, seekTimestamp,NULL);
+                        avcodec_flush_buffers(cdcContext);
+                        lastPts = AV_NOPTS_VALUE;
+                        continue;
+                    }
                 }
             }
         }
-       
+        if(playbackStop)
+        {
+            usleep((useconds_t)60000);
+            continue;
+        }
         if (packet->stream_index == videoStreamIndex)
         {
             // send the encoded packet to codec
@@ -147,13 +184,14 @@ int main(int argc, char *argv[])
             frameFinished = avcodec_receive_frame(cdcContext, frame);
             
             if (!frameFinished)
-            {                
+            {           
+                printf("playback %c : %d | %d\n",av_get_picture_type_char(frame->pict_type), playbackStop, cdcContext->frame_num);     
                 if(frame->pts != AV_NOPTS_VALUE)
                 {
                     if(lastPts != AV_NOPTS_VALUE)
                     {
                         delay = av_rescale_q(frame->pts - lastPts, time_base, AV_TIME_BASE_Q);
-                        printf("frame : %d delay : %d\n", cdcContext->frame_number, delay);
+                        printf("frame : %d, Pts : %d, delay : %ld\n", cdcContext->frame_number, frame->pts, delay);
                         usleep(delay);
                     }
                     lastPts = frame->pts;
@@ -171,10 +209,10 @@ int main(int argc, char *argv[])
                 SDL_RenderCopy(renderer, texture, NULL, NULL);
                 SDL_RenderPresent(renderer);
             }
+            seekTimestamp = frame->pts;
             av_frame_unref(frame);
         }
         av_packet_unref(packet);
-        // printf("End of av Read\n");
 
         if(quit)
         {
