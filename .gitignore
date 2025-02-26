@@ -3,6 +3,7 @@
 !*/
 .out
 .exe
+!Dockerfile
 .vscode
 *.mkv
 *.mp4
