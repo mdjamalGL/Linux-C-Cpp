@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
             
             if (!frameFinished)
             {           
-                printf("playback %c : %d | %d\n",av_get_picture_type_char(frame->pict_type), playbackStop, cdcContext->frame_num);     
+		    
                 if(frame->pts != AV_NOPTS_VALUE)
                 {
                     if(lastPts != AV_NOPTS_VALUE)
