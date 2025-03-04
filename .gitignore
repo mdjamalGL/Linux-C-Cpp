@@ -4,6 +4,7 @@
 .out
 .exe
 !Dockerfile
+build
 .vscode
 *.mkv
 *.mp4

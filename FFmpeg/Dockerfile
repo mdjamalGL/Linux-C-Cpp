@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ulocal
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /FFmpeg
 COPY . .

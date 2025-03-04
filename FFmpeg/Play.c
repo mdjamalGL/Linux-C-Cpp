@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
                     playbackStop = playbackStop ? false : true;
                     if(playbackStop)
                     {
-                        seekTarget = cdcContext->frame_number;
+                        seekTarget = cdcContext->frame_num;
                         // seekTimestamp= av_rescale_q(cdcContext->frame_num, (AVRational){avgFrameRate.den, avgFrameRate.num}, time_base);
                         avformat_close_input(&fmtContext);
                         fmtContext = NULL;
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
                     if(lastPts != AV_NOPTS_VALUE)
                     {
                         delay = av_rescale_q(frame->pts - lastPts, time_base, AV_TIME_BASE_Q);
-                        printf("frame : %d, Pts : %d, delay : %ld\n", cdcContext->frame_number, frame->pts, delay);
+                       // printf("frame : %d, Pts : %d, delay : %ld\n", cdcContext->frame_number, frame->pts, delay);
                         usleep(delay);
                     }
                     lastPts = frame->pts;

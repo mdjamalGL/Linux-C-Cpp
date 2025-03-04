@@ -9,7 +9,7 @@ find_package(ffmpeg REQUIRED)
 
 add_executable(dplay Play.c)
 
-target_link_libraries(dplay PUBLIC
+target_link_libraries(dplay PRIVATE
     ffmpeg::avformat
     ffmpeg::avcodec
     ffmpeg::swscale
