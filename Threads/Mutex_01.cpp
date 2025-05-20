@@ -14,7 +14,7 @@
 long long int amount = 0;
 std::mutex mtx;
 
-void threadCallableFunction1(int secs)
+void threadCallableFunction(int secs)
 {
     std::cout<<"Inside Thread w Function : "<<std::this_thread::get_id()<<std::endl;
 
@@ -26,23 +26,12 @@ void threadCallableFunction1(int secs)
     mtx.unlock();
 }
 
-void threadCallableFunction2(int secs)
-{
-    std::cout<<"Inside Thread w Function : "<<std::this_thread::get_id()<<std::endl;
-    mtx.lock();
-    for(int i = 1 ; i <= 1000000; i++)
-    {
-        amount++;
-    }
-    mtx.unlock();
-}
-
 int main()
 {
     std::cout<<"Inside Main Thread : "<<std::this_thread::get_id()<<std::endl;
 
-    std::thread t1(threadCallableFunction1, 1);
-    std::thread t2(threadCallableFunction2, 1);
+    std::thread t1(threadCallableFunction, 1);
+    std::thread t2(threadCallableFunction, 1);
 
     if(t1.joinable())
     t1.join();
