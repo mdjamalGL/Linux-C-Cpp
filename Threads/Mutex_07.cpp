@@ -1,14 +1,18 @@
 /**
- * Mutex 03
- * 01. std::timed_mutex : This is used for securing critical section and avoid race conditions.
- *     It provides a mechanism whereby if the lock is not acquired instead of blocking forever it will check
- *     for locks availability for n secs, after which it executes alternate code from critical section.
- *     Hence, it provides a way out if lock is not acquired.
+ * Mutex 07
+ * 01. std::mutex : This is used for securing critical section and avoid race conditions.
  * 
- * 02. we use try_lock_for(time) and unlock(), with the mutex to restrict the access of critical section
- *     If we take sleep_sec_1 = 6 and sleep_sec_2 = 2, we won't get the correct value for amount, as the second thread waited for
- *     2 seconds while first thread took > 6 seconds to process.
- *     Had we taken sleep_sec_1 = 1, we get the correct answer as expected.
+ * 02. std::unique_lock : Another template for managing mutexes, that is more flexible than lock_guard
+ *     and follow RAII.
+ *     
+ *     std::try_to_lock : Attempts to lock the mutex without blocking, if the mutex has already been locked, 2
+ *     it won't wait for the mutex to be freed, and moves on.
+ *     
+ *     lock.owns_lock() : check if the unique_lock with try_to_lock, was able to acquire the lock or not.
+ *     
+ *     we can also use, try_lock_for(), try_lock_until(), manua lock and unlock, multiple times are also available, making
+ *     it very useful.
+ * 
  */
 #include <iostream>
 #include <thread>
@@ -17,51 +21,51 @@
 #include <unistd.h>
 
 long long int amount = 0;
-std::timed_mutex tmtx;
+std::mutex mtx;
 
 void threadCallableFunction1(int secs)
 {
     std::cout<<"Inside Thread w Function : "<<std::this_thread::get_id()<<std::endl;
+    
 
-    tmtx.lock();
+    std::unique_lock<std::mutex> lock(mtx);
     std::cout<<"lock acquired by : "<<std::this_thread::get_id()<<std::endl;
-
+    std::this_thread::sleep_for(std::chrono::seconds(secs));
     for(int i = 1 ; i <= 1000000 ; i++)
     {
         amount++;
     }
-    std::this_thread::sleep_for(std::chrono::seconds(secs));
-
     std::cout<<"lock released by : "<<std::this_thread::get_id()<<std::endl;
-    tmtx.unlock();
 }
 
 void threadCallableFunction2(int secs)
 {
     std::cout<<"Inside Thread w Function : "<<std::this_thread::get_id()<<std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(secs));
 
-    if(tmtx.try_lock_for(std::chrono::seconds(secs)))
+    std::unique_lock<std::mutex> lock(mtx, std::try_to_lock);
+
+    if(lock.owns_lock())
     {
         std::cout<<"lock acquired by : "<<std::this_thread::get_id()<<std::endl;
         for(int i = 1 ; i <= 1000000 ; i++)
         {
             amount++;
         }
-
-        std::cout<<"lock released by : "<<std::this_thread::get_id()<<std::endl;        
-        tmtx.unlock();
+        std::cout<<"lock released by : "<<std::this_thread::get_id()<<std::endl;
     }
     else
     {
-        std::cout<<"Could not Acquire Lock"<<std::endl;
+        std::cout<<"lock could not be acquired : "<<std::this_thread::get_id()<<std::endl;
     }
+            
 }
 
 int main()
 {
     std::cout<<"Inside Main Thread : "<<std::this_thread::get_id()<<std::endl;
 
-    int sleep_sec_1 = 1;
+    int sleep_sec_1 = 5;
     int sleep_sec_2 = 2;
 
     std::thread t1(threadCallableFunction1, sleep_sec_1);

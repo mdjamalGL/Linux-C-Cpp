@@ -1,6 +1,6 @@
 /**
  * Mutex 03
- * 01. std::timed_mutex : This is used for securing critical section and avoid race conditions.
+ * 01. std::shared_mutex : This is used for securing critical section and avoid race conditions.
  *     It provides a mechanism whereby if the lock is not acquired instead of blocking forever it will check
  *     for locks availability for n secs, after which it executes alternate code from critical section.
  *     Hence, it provides a way out if lock is not acquired.
