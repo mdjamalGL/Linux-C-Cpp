@@ -1,13 +1,11 @@
 /**
  * Mutex 08
- * 01. std::shared_mutex : This is used for securing critical section and avoid race conditions. It allows
- *     more than one thread to lock it,
+ * 01. std::mutex : This is used for securing critical section and avoid race conditions.
  * 
- * 02. std::shared_lock : allows many reader threads to acquire the lock on shared mutex
- *     via this lock, many thread can read concurrently.
+ * 02. std::scoped_lock : This simplifies the process of acquiring and managing locks of one or more mutexes,
+ *     in a deadlock safe manner and using RAII principle.
  * 
- * 03. std::unique_lock : if we use unique_lock on the shared mutex we won't be able to acuire any other
- *     lock be it unique or shared_lock.
+ *     It uses an algorithm similar to std::lock() internally, which attempts to lock all mutexes, without deadlock.
  * 
  */
 #include <iostream>
@@ -18,15 +16,19 @@
 #include <unistd.h>
 
 long long int amount = 0;
-std::shared_mutex smtx;
+std::mutex mtx1;
+std::mutex mtx2;
 
 void threadCallableGet(int secs)
 {
     std::cout<<"Inside Thread Get Function : "<<std::this_thread::get_id()<<std::endl;
     
-    std::shared_lock<std::shared_mutex> lock(smtx);
+    std::scoped_lock lock(mtx1, mtx2);
     std::cout<<"lock acquired by : "<<std::this_thread::get_id()<<std::endl;
-    std::cout<<"Amount Get : "<<amount<<std::endl;
+    for(int i = 1 ; i <= 1000000 ; i++)
+    {
+        amount++;
+    }
     std::cout<<"lock released by : "<<std::this_thread::get_id()<<std::endl;
 }
 
@@ -34,7 +36,7 @@ void threadCallableSet(int secs)
 {
     std::cout<<"Inside Thread Set Function : "<<std::this_thread::get_id()<<std::endl;
 
-    std::unique_lock<std::shared_mutex> lock(smtx);
+    std::scoped_lock lock(mtx1, mtx2);
     std::cout<<"lock acquired by : "<<std::this_thread::get_id()<<std::endl;
     for(int i = 1 ; i <= 1000000 ; i++)
     {
@@ -47,8 +49,8 @@ int main()
 {
     std::cout<<"Inside Main Thread : "<<std::this_thread::get_id()<<std::endl;
 
-    int sleep_sec_1 = 5;
-    int sleep_sec_2 = 2;
+    int sleep_sec_1 = 0;
+    int sleep_sec_2 = 0;
 
     std::thread t1(threadCallableSet, sleep_sec_1);
     std::thread t2(threadCallableGet, sleep_sec_2);
@@ -59,6 +61,7 @@ int main()
     if(t2.joinable())
     t2.join();
 
+    std::cout<<"Amount : \n\tActual : "<<amount<<"\n\tExpected : "<<2000000<<std::endl;
     std::cout<<"Main Thread Complete"<<std::endl;
     return  0;
 }
