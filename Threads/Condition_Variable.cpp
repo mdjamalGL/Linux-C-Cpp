@@ -1,10 +1,15 @@
 /**
- * Mutex 08
+ * Mutex 10
  * 01. std::mutex : This is used for securing critical section and avoid race conditions.
  * 
- * 02. std::condition_variable :
+ * 02. std::condition_variable : This gives the ability to block a thread that is waiting for an event to occur.
+ *     When that event occurs, the other thread invokes the cvar.notify_one and cvar.notify_all to notify the thread that is
+ *     waiting for the event.
+ *     It works only with unique_lock().
  * 
- * 03. cvar.notify_one() : 
+ * 03. cvar.notify_one() : informs the thread blocked on the condition variable to check the predicate.
+ * 04. cvar.notify_all() : informs all the threads blocked on the condition variable, might be useful in case of some 
+ *     global event. 
  * 
  */
 #include <iostream>
@@ -27,7 +32,7 @@ void threadCallableWithdraw(int money)
     cv.wait(lock, [](){ return amount != 0 ? true : false;});
 
     std::cout<<"lock acquired by : "<<std::this_thread::get_id()<<std::endl;
-    
+
     if(amount < money)
     {
         std::cout<<"Balance is low : "<<amount<<std::endl;
@@ -46,15 +51,17 @@ void threadCallableDeposit(int money)
 {
     std::cout<<"Inside Thread Deposit Function : "<<std::this_thread::get_id()<<std::endl;
 
-    std::lock_guard lock(mtx1);
-    std::cout<<"lock acquired by : "<<std::this_thread::get_id()<<std::endl;
+    {
+        std::lock_guard lock(mtx1);
+        std::cout<<"lock acquired by : "<<std::this_thread::get_id()<<std::endl;
 
-    amount += money;
-    std::cout<<"New Balance : "<<amount<<std::endl;
+        amount += money;
+        std::cout<<"New Balance : "<<amount<<std::endl;
+        // This notify_one will inform the thread that is waiting from the cv. to again check for the predicate
+
+        std::cout<<"lock released by : "<<std::this_thread::get_id()<<std::endl;
+    }
     cv.notify_one();
-    // This notify_one will inform the thread that is waiting from the cv. to again check for the predicate
-
-    std::cout<<"lock released by : "<<std::this_thread::get_id()<<std::endl;
 
 }
 

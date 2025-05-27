@@ -1,6 +1,6 @@
 /**
  * Mutex 02
- * 01. std::recurive_mutex : This is used for securing critical section and avoid race conditions.
+ * 01. std::recursive_mutex : This is used for securing critical section and avoid race conditions.
  *     It provides exclusive, and recursive ownership. i.e. same thread can acquire an already 
  *     acquired mutex over and over again. It will have to release it as many time as the lock was
  *     acquired.
