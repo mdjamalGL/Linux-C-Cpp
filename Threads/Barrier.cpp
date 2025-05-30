@@ -1,5 +1,9 @@
 /**
+ * Barrier : a reusable synchronization point that allows all threads to wait until 
+ * all the participants reach a specific point in their execution.
  * 
+ * In the constructor of Barrier where we mention thread number, we can also pass a 
+ * phase completion function.
  */
 
 #include <iostream>
